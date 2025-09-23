@@ -1,110 +1,78 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Consulta MBFT — Versão Corrigida (Enter funciona)</title>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    :root{
-      --bg: #ffffff;
-      --muted: #6b7280;
-      --card-border: #e6e7ea;
-      --accent-yellow: #facc15;
-      --accent-blue: #0366d6;
-      --shadow: 0 8px 28px rgba(2,6,23,0.06);
-      --radius: 12px;
-    }
-    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:#071133}
-    .container{max-width:1100px;margin:28px auto;padding:20px}
-    header{
-      background: linear-gradient(180deg, rgba(250,250,250,0.8), rgba(255,255,255,0.9));
-      border-radius: var(--radius); padding:18px 22px; text-align:center; box-shadow:var(--shadow);
-    }
-    .title-row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
-    .semaforo{font-size:44px; line-height:1}
-    h1{font-size:20px;margin:0;font-weight:700}
-    p.lead{color:var(--muted);margin:6px 0 12px;font-size:0.95rem;max-width:920px;margin-left:auto;margin-right:auto}
-    .search-row{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-    .input{padding:12px 14px;border-radius:10px;border:1px solid var(--card-border);min-width:320px;flex:1;box-shadow:0 2px 6px rgba(2,6,23,0.03)}
-    .btn{background:var(--accent-yellow);border:0;padding:12px 14px;border-radius:10px;font-weight:700;cursor:pointer}
-    .btn.gray{background:#f3f4f6;color:#111;border:1px solid var(--card-border)}
-    .meta{color:var(--muted);text-align:center;margin-top:8px;font-size:0.92rem}
-    #summary{color:var(--muted);text-align:center;margin:14px 0;font-size:0.95rem}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Consulta MBFT — Dados no código</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --yellow:#facc15; --muted:#6b7280; --card-border:#e6e7ea;
+  }
+  body{font-family:Inter,system-ui,Arial,sans-serif;background:#ffffff;color:#071133;margin:0;padding:28px}
+  .container{max-width:1100px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px}
+  .semaforo{font-size:44px}
+  h1{margin:0;font-size:20px}
+  .lead{color:var(--muted);margin-top:6px;font-size:0.95rem}
+  .hero{margin-top:12px;text-align:center}
+  .search-row{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .search-input{padding:12px 14px;border-radius:12px;border:1px solid var(--card-border);min-width:340px;flex:1}
+  .btn{background:var(--yellow);border:0;padding:12px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn.gray{background:#f3f4f6;color:#111;border:1px solid var(--card-border)}
+  .meta{color:var(--muted);text-align:center;margin-top:10px;font-size:0.95rem}
+  #summary{color:var(--muted);text-align:center;margin:14px 0;font-size:0.95rem}
 
-    /* results */
-    #results{display:flex;flex-direction:column;gap:14px;margin-top:10px}
-    .card{position:relative;border:1px solid var(--card-border);border-radius:12px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(2,6,23,0.03);overflow:visible}
-    .card .severity-strip{position:absolute;left:0;top:0;width:6px;height:100%;border-top-left-radius:12px;border-bottom-left-radius:12px}
-    .card-top{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-start}
-    .top-field{flex:1 1 320px;min-width:200px}
-    .top-title{font-size:0.78rem;color:var(--muted);font-weight:700;text-transform:uppercase}
-    .top-value{font-size:1.02rem;font-weight:700;margin-top:6px;word-break:break-word;white-space:normal}
-    .grid-fields{display:flex;flex-wrap:wrap;gap:10px}
-    .field-box{flex:1 1 220px;min-width:160px;border-radius:10px;padding:10px;border:1px solid #f1f5f9;background:#fbfbfc;display:flex;flex-direction:column}
-    .field-label{font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase}
-    .field-value{margin-top:6px;font-size:0.95rem;color:#0f172a;white-space:normal;word-break:break-word}
-
-    .severity-badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;font-size:0.78rem;margin-left:6px}
-    .sev-leve{background:#ecfdf5;color:#065f46}
-    .sev-media{background:#fffbeb;color:#92400e}
-    .sev-grave{background:#fff1f2;color:#991b1b}
-
-    .legend{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px;color:var(--muted);font-size:0.9rem}
-    .legend-item{display:flex;gap:6px;align-items:center}
-    .dot{width:12px;height:12px;border-radius:50%}
-
-    @media (max-width:880px){
-      .top-field{flex-basis:48%}
-      .field-box{flex-basis:48%}
-      .semaforo{font-size:36px}
-    }
-    @media (max-width:480px){
-      .top-field{flex-basis:100%}
-      .field-box{flex-basis:100%}
-      .semaforo{font-size:32px}
-    }
-  </style>
+  /* Results layout */
+  #results{display:flex;flex-direction:column;gap:14px;margin-top:10px}
+  .card{position:relative;border:1px solid var(--card-border);border-radius:12px;padding:14px;background:#fff;box-shadow:0 6px 18px rgba(2,6,23,0.03);overflow:visible}
+  .severity-strip{position:absolute;left:0;top:0;width:6px;height:100%;border-top-left-radius:12px;border-bottom-left-radius:12px}
+  .card-top{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-start}
+  .top-field{flex:1 1 320px;min-width:200px}
+  .top-title{font-size:0.78rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+  .top-value{font-size:1.02rem;font-weight:700;margin-top:6px;word-break:break-word;white-space:normal}
+  .grid-fields{display:flex;flex-wrap:wrap;gap:10px}
+  .field-box{flex:1 1 220px;min-width:160px;border-radius:10px;padding:10px;border:1px solid #f1f5f9;background:#fbfbfc;display:flex;flex-direction:column}
+  .field-label{font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase}
+  .field-value{margin-top:6px;font-size:0.95rem;color:#0f172a;white-space:normal;word-break:break-word}
+  .severity-badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;font-size:0.78rem;margin-left:8px}
+  @media (max-width:880px){.top-field{flex-basis:48%}.field-box{flex-basis:48%}}
+  @media (max-width:480px){.top-field{flex-basis:100%}.field-box{flex-basis:100%}}
+</style>
 </head>
 <body>
   <div class="container">
     <header>
-      <div class="title-row">
-        <div class="semaforo" aria-hidden="true">🚦</div>
-        <div>
-          <h1>Consulta — Manual Brasileiro de Fiscalização de Trânsito (MBFT)</h1>
-          <p class="lead">Busque informações do Manual Brasileiro de Fiscalização de Trânsito e das infrações. Fonte: <a href="https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-contran/resolucoes/mbvt20222.pdf" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:underline">MBVT-2022-2 (PDF)</a></p>
-        </div>
-      </div>
-
-      <div class="search-row" role="search" aria-label="Busca de infrações">
-        <input id="searchInput" class="input" placeholder="Digite termo (ex.: parabrisa, Art.230, 745-01). Deixe vazio para listar todos."/>
-        <button id="searchBtn" class="btn" title="Pesquisar (vazio = todos)">Pesquisar</button>
-        <button id="clearBtn" class="btn gray" title="Limpar tela">Limpar</button>
-        <button id="downloadBtn" class="btn gray" disabled title="Baixar resultados filtrados (XLS)">Baixar XLS</button>
-      </div>
-
-      <div class="meta">
-        <strong>Pesquisa por colunas:</strong> Tipificação Resumida, Código do Enquadramento, Amparo Legal, Tipificação do Enquadramento, Gravidade, Penalidade, Medida Administrativa, Pode Configurar Crime de Trânsito, Infrator, Competência, Pontuação, Constatação da Infração
-      </div>
-
-      <div class="legend" aria-hidden="true">
-        <div class="legend-item"><div class="dot" style="background:#10b981"></div>Leve</div>
-        <div class="legend-item"><div class="dot" style="background:#f59e0b"></div>Média</div>
-        <div class="legend-item"><div class="dot" style="background:#ef4444"></div>Grave</div>
+      <div class="semaforo" aria-hidden="true">🚦</div>
+      <div>
+        <h1>Consulta — Manual Brasileiro de Fiscalização de Trânsito (MBFT)</h1>
+        <div class="lead">Busque informações do MBFT e das infrações. Fonte: <a href="https://www.gov.br/transportes/pt-br/assuntos/transito/conteudo-contran/resolucoes/mbvt20222.pdf" target="_blank" rel="noopener">MBVT-2022-2 (PDF)</a></div>
       </div>
     </header>
 
-    <div id="summary">Clique em <strong>Pesquisar</strong> para exibir resultados (deixe vazio para todos).</div>
+    <div class="hero">
+      <div class="search-row" role="search">
+        <input id="searchInput" class="search-input" placeholder="Digite termo (ex.: parabrisa, Art.230, 745-01). Deixe vazio para listar todos." />
+        <button id="searchBtn" class="btn" title="Pesquisar (vazio = todos)">Pesquisar</button>
+        <button id="clearBtn" class="btn gray" title="Limpar">Limpar</button>
+        <button id="downloadBtn" class="btn gray" title="Baixar resultados (XLS)" disabled>Baixar XLS</button>
+      </div>
+      <div class="meta">
+        Colunas pesquisáveis: <strong>Tipificação Resumida, Código do Enquadramento, Amparo Legal, Tipificação do Enquadramento, Gravidade, Penalidade, Medida Administrativa, Pode Configurar Crime de Trânsito, Infrator, Competência, Pontuação, Constatação da Infração</strong>.
+      </div>
+    </div>
+
+    <div id="summary">Nenhum resultado exibido — clique em Pesquisar.</div>
     <div id="results" aria-live="polite"></div>
   </div>
 
 <script>
-/* ==================== COLE SEU CSV AQUI ====================
-Mantenha cabeçalho com ;:
-Tipificação Resumida;Código do Enquadramento;Amparo Legal;Tipificação do Enquadramento;Gravidade;Penalidade;Medida Administrativa;Pode Configurar Crime de Trânsito;Infrator;Competência;Pontuação;Constatação da Infração
-*/
-var csvData = "Tipificação Resumida;Código do Enquadramento;Amparo Legal;Tipificação do Enquadramento;Gravidade;Penalidade;Medida Administrativa;Pode Configurar Crime de Trânsito;Infrator;Competência;Pontuação;Constatação da Infração
+/* =========================
+  DADOS EMBUTIDOS (BACK-STYLE)
+  Substitua o conteúdo da variável `embeddedCSV` pelo seu CSV completo.
+  Mantenha o cabeçalho e o separador ';'.
+  ========================= */
+const embeddedCSV = `Tipificação Resumida;Código do Enquadramento;Amparo Legal;Tipificação do Enquadramento;Gravidade;Penalidade;Medida Administrativa;Pode Configurar Crime de Trânsito;Infrator;Competência;Pontuação;Constatação da Infração
 Iniciar obra perturbe/interrompa circulação/segurança veíc/pedestre s/permissão.;751-01;Art. 95. ;Nenhuma obra ou evento que possa perturbar ou interromper a livre circulação de veículos e pedestres, ou colocar em risco sua segurança, será iniciada sem permissão prévia do órgão ou entidade de trânsito com circunscrição sobre a via.;Não aplicável;Multa;Não aplicável.;NÃO;Pessoa Física ou Jurídica;Órgão ou Entidade de Trânsito Municipal e Rodoviário.;Não computável;Mediante Abordagem.
 Iniciar evento perturbe/interrompa circulação/segurança veíc/pedestre s/permissão.;751-02;Art. 95. ;Nenhuma obra ou evento que possa perturbar ou interromper a livre circulação de veículos e pedestres, ou colocar em risco sua segurança, será iniciada sem permissão prévia do órgão ou entidade de trânsito com circunscrição sobre a via.;Não aplicável;Multa;Não aplicável.;NÃO;Pessoa Física ou Jurídica;Órgão ou Entidade de Trânsito Municipal e Rodoviário.;Não computável;Mediante Abordagem.
 Não sinalizar a execução ou manutenção da obra.;752-81;Art. 95, §1º. ;Art. 95. Nenhuma obra ou evento que possa perturbar ou interromper a livre circulação de veículos e pedestres, ou colocar em risco sua segurança, será iniciada sem permissão prévia do órgão ou entidade de trânsito com circunscrição sobre a via. § 1º A obrigação de sinalizar é do responsável pela execução ou manutenção da obra ou do evento.;Não aplicável;Multa;Não aplicável.;NÃO;Pessoa Física ou Jurídica;Órgão ou Entidade de Trânsito Municipal e Rodoviário.;Não computável;Mediante Abordagem
@@ -535,111 +503,129 @@ Atraso escrituração livro registro entrada/saída e de uso placa de experiênc
 Fraude escrituração livro registro entrada/saída e de uso placa de experiência.;754-43;Art. 330, § 5º e § 6º. ;Art. 330. Os estabelecimentos onde se executem reformas ou recuperação de veículos e os que comprem, vendam ou desmontem veículos, usados ou não, são obrigados a possuir livros de registro de seu movimento de entrada e saída e de uso de placas de experiência, conforme modelos aprovados e rubricados pelos órgãos de trânsito. § 5° A falta de escrituração dos livros, o atraso, a fraude ao realizá-lo e a recusa de sua exibição serão punidas com a multa prevista para as infrações gravíssimas, independente das demais cominações legais cabíveis. §6° os livros previstos neste artigo poderão ser substituídos por sistema eletrônico, na forma regulamentada pelo Contran.;Gravíssima;Multa;Não.;NÃO;Pessoa Jurídica ou Física;Órgão ou Entidade de Trânsito Estadual;Não computável;Vide procedimentos
 Recusa da exibição do livro registro entrada/saída e de uso placa de experiência.;754-44;Art. 330, § 5º e § 6º. ;Art. 330. Os estabelecimentos onde se executem reformas ou recuperação de veículos e os que comprem, vendam ou desmontem veículos, usados ou não, são obrigados a possuir livros de registro de seu movimento de entrada e saída e de uso de placas de experiência, conforme modelos aprovados e rubricados pelos órgãos de trânsito. § 5° A falta de escrituração dos livros, o atraso, a fraude ao realizá-lo e a recusa de sua exibição serão punidas com a multa prevista para as infrações gravíssimas, independente das demais cominações legais cabíveis. §6° os livros previstos neste artigo poderão ser substituídos por sistema eletrônico, na forma regulamentada pelo Contran.;Gravíssima;Multa;Não.;NÃO;Pessoa Jurídica ou Física;Órgão ou entidade de trânsito estadual;Não computável;Vide procedimentos
 Deixar de Realizar o Exame toxicológico previsto no Parágrafo 2 do Art. 148-A após 30 (trinta) dias do vencimento.;782-00;Art. 165-D;Deixar de realizar o exame toxicológico previsto no § 2º do art. 148-A deste Código, após 30 (trinta) dias do vencimento do prazo estabelecido.;Gravíssima;Multa (5X);Não aplicável.;NÃO.;Condutor;Órgão ou Entidade de Trânsito Estadual.;7;Por registro em sistema eletrônico de processamento de dados. Não requer abordagem em via.
-Penalidade de multa por não identificação do condutor infrator (NIC).;500-20;Art. 257, § 8º;Penalidade de multa à pessoa jurídica proprietária do veículo por não identificação de condutor infrator.;Não Aplicável.;Multa. O valor é obtido pela multiplicação do valor previsto para a multa originária pelo número de infrações iguais cometidas no período de 12 (doze) meses.;Não Aplicável.;NÃO.;Pessoa Jurídica proprietária do veículo.;Autoridade de trânsito responsável pela lavratura do auto da infração originária.;Não computável;Por registro no sistema.
-";
+Penalidade de multa por não identificação do condutor infrator (NIC).;500-20;Art. 257, § 8º;Penalidade de multa à pessoa jurídica proprietária do veículo por não identificação de condutor infrator.;Não Aplicável.;Multa. O valor é obtido pela multiplicação do valor previsto para a multa originária pelo número de infrações iguais cometidas no período de 12 (doze) meses.;Não Aplicável.;NÃO.;Pessoa Jurídica proprietária do veículo.;Autoridade de trânsito responsável pela lavratura do auto da infração originária.;Não computável;Por registro no sistema.`;
 
-/* ================ parsing utils ================== */
-function parseCSV(text){
+/* ============== Robust CSV parser (handles quoted fields & internal newlines) ============== */
+function parseCSV(text, sep=';'){
   if(!text) return {headers:[], rows:[]};
-  var lines = text.split(/\r?\n/).filter(function(l){return l.trim().length>0;});
-  if(lines.length === 0) return {headers:[], rows:[]};
-  var headers = lines[0].split(';').map(function(h){return h.trim();});
-  var rows = [];
-  for(var i=1;i<lines.length;i++){
-    var cols = lines[i].split(';');
-    var obj = {};
-    for(var j=0;j<headers.length;j++){
-      obj[headers[j]] = (cols[j] !== undefined) ? cols[j].trim() : "";
+  // Normalize newlines
+  text = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const records = [];
+  let field = '';
+  let row = [];
+  let inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    const next = text[i+1];
+    if(ch === '"'){
+      if(inQuotes && next === '"'){ // escaped quote
+        field += '"'; i++; continue;
+      }
+      inQuotes = !inQuotes; continue;
     }
-    rows.push(obj);
+    if(!inQuotes && ch === sep){
+      row.push(field); field = ''; continue;
+    }
+    if(!inQuotes && ch === '\n'){
+      row.push(field); records.push(row); row = []; field = ''; continue;
+    }
+    field += ch;
   }
-  return {headers: headers, rows: rows};
-}
-function escapeHtml(s){ if(s===null||s===undefined) return ""; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-/* ================ state & elements ================== */
-var headers = [];
-var database = [];
-var lastFiltered = [];
-
-var searchInput = document.getElementById('searchInput');
-var searchBtn = document.getElementById('searchBtn');
-var clearBtn = document.getElementById('clearBtn');
-var downloadBtn = document.getElementById('downloadBtn');
-var resultsEl = document.getElementById('results');
-var summaryEl = document.getElementById('summary');
-
-/* ================ visual helpers ================== */
-function severityColorClass(value){
-  if(!value) return {strip:'#94a3b8', badgeClass:''};
-  var v = String(value).toLowerCase();
-  if(v.indexOf('grave') !== -1 || v.indexOf('grv') !== -1) return {strip:'#ef4444', badgeClass:'sev-grave'};
-  if(v.indexOf('média') !== -1 || v.indexOf('media') !== -1 || v.indexOf('médio') !== -1) return {strip:'#f59e0b', badgeClass:'sev-media'};
-  if(v.indexOf('leve') !== -1) return {strip:'#10b981', badgeClass:'sev-leve'};
-  return {strip:'#94a3b8', badgeClass:''};
+  // final push
+  if(field !== '' || row.length > 0){
+    row.push(field);
+    records.push(row);
+  }
+  if(records.length === 0) return {headers:[], rows:[]};
+  const headers = records[0].map(h => (h||'').toString().trim());
+  const rows = records.slice(1).map(cols => {
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = cols[i] !== undefined ? cols[i].toString().trim() : ''; });
+    return obj;
+  });
+  return { headers, rows };
 }
 
-/* ================ render single card ================== */
+/* ============== UI & behavior ============== */
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+const clearBtn = document.getElementById('clearBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const resultsEl = document.getElementById('results');
+const summaryEl = document.getElementById('summary');
+
+let headers = [];
+let database = [];
+let lastFiltered = [];
+
+// Visual helpers
+function escapeHtml(s){ if(s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function severityInfo(v){
+  if(!v) return {color:'#94a3b8', badge:''};
+  const s = String(v).toLowerCase();
+  if(s.includes('grave')) return {color:'#ef4444', badge:'Grave'};
+  if(s.includes('média') || s.includes('media')) return {color:'#f59e0b', badge:'Média'};
+  if(s.includes('leve')) return {color:'#10b981', badge:'Leve'};
+  return {color:'#94a3b8', badge:v};
+}
+
+// create card element
 function createCard(item){
-  var wrapper = document.createElement('article');
-  wrapper.className = 'card';
+  const card = document.createElement('article');
+  card.className = 'card';
+  const sev = severityInfo(item['Gravidade']);
+  const strip = document.createElement('div'); strip.className = 'severity-strip'; strip.style.background = sev.color;
+  card.appendChild(strip);
 
-  // severity strip
-  var sev = severityColorClass(item['Gravidade']);
-  var strip = document.createElement('div');
-  strip.className = 'severity-strip';
-  strip.style.background = sev.strip;
-  wrapper.appendChild(strip);
+  // top line: Tipificação + Código
+  const top = document.createElement('div'); top.className = 'card-top';
+  const tip = document.createElement('div'); tip.className = 'top-field';
+  tip.innerHTML = `<div class="top-title">Tipificação Resumida</div><div class="top-value">${escapeHtml(item['Tipificação Resumida']||'')}</div>`;
+  const code = document.createElement('div'); code.className = 'top-field';
+  code.innerHTML = `<div class="top-title">Código do Enquadramento</div><div class="top-value">${escapeHtml(item['Código do Enquadramento']||'')}</div>`;
+  top.appendChild(tip);
+  top.appendChild(code);
 
-  // top - Tipificação Resumida + Código do Enquadramento (same line)
-  var top = document.createElement('div'); top.className = 'card-top';
-  var tip = document.createElement('div'); tip.className = 'top-field';
-  tip.innerHTML = '<div class="top-title">Tipificação Resumida</div><div class="top-value">' + escapeHtml(item['Tipificação Resumida'] || '') + '</div>';
-  var code = document.createElement('div'); code.className = 'top-field';
-  code.innerHTML = '<div class="top-title">Código do Enquadramento</div><div class="top-value">' + escapeHtml(item['Código do Enquadramento'] || '') + '</div>';
-  top.appendChild(tip); top.appendChild(code);
-
-  // badge for severity next to title if present
-  if(item['Gravidade'] && item['Gravidade'].trim() !== ''){
-    var sevBadge = document.createElement('div');
-    sevBadge.className = 'severity-badge ' + (sev.badgeClass || '');
-    sevBadge.textContent = (item['Gravidade'] || '').toString();
-    var spanWrap = document.createElement('div');
-    spanWrap.style.display = 'flex'; spanWrap.style.alignItems = 'center'; spanWrap.style.gap = '8px'; spanWrap.appendChild(code); spanWrap.appendChild(sevBadge);
-    top.removeChild(code);
-    top.appendChild(spanWrap);
+  if(sev.badge){
+    const badge = document.createElement('div');
+    badge.className = 'severity-badge';
+    badge.textContent = sev.badge;
+    // style badge colors inline
+    if(sev.badge === 'Grave'){ badge.style.background='#fff1f2'; badge.style.color='#991b1b'; }
+    else if(sev.badge === 'Média'){ badge.style.background='#fffbeb'; badge.style.color='#92400e'; }
+    else if(sev.badge === 'Leve'){ badge.style.background='#ecfdf5'; badge.style.color='#065f46'; }
+    else { badge.style.background='#f3f4f6'; badge.style.color='#111'; }
+    top.appendChild(badge);
   }
 
-  wrapper.appendChild(top);
+  card.appendChild(top);
 
-  // grid of preferred fields
-  var grid = document.createElement('div'); grid.className = 'grid-fields';
-  var preferred = ['Amparo Legal','Tipificação do Enquadramento','Penalidade','Medida Administrativa','Pode Configurar Crime de Trânsito','Infrator','Competência','Pontuação','Constatação da Infração'];
+  // grid fields (preferred order)
+  const preferred = ['Amparo Legal','Tipificação do Enquadramento','Gravidade','Penalidade','Medida Administrativa','Pode Configurar Crime de Trânsito','Infrator','Competência','Pontuação','Constatação da Infração'];
+  const grid = document.createElement('div'); grid.className = 'grid-fields';
 
-  for(var i=0;i<preferred.length;i++){
-    var k = preferred[i];
+  preferred.forEach(k => {
     if(headers.indexOf(k) !== -1){
-      var box = document.createElement('div'); box.className = 'field-box';
-      box.innerHTML = '<div class="field-label">' + escapeHtml(k) + '</div><div class="field-value">' + escapeHtml(item[k] || '') + '</div>';
+      const box = document.createElement('div'); box.className = 'field-box';
+      box.innerHTML = `<div class="field-label">${escapeHtml(k)}</div><div class="field-value">${escapeHtml(item[k]||'')}</div>`;
       grid.appendChild(box);
     }
-  }
+  });
 
-  // add any remaining headers (avoid duplicating)
-  for(var hIdx=0; hIdx<headers.length; hIdx++){
-    var h = headers[hIdx];
-    if(h === 'Tipificação Resumida' || h === 'Código do Enquadramento') continue;
-    if(preferred.indexOf(h) !== -1) continue;
-    var b = document.createElement('div'); b.className = 'field-box';
-    b.innerHTML = '<div class="field-label">' + escapeHtml(h) + '</div><div class="field-value">' + escapeHtml(item[h] || '') + '</div>';
+  // any remaining headers
+  headers.forEach(h => {
+    if(h === 'Tipificação Resumida' || h === 'Código do Enquadramento') return;
+    if(preferred.indexOf(h) !== -1) return;
+    const b = document.createElement('div'); b.className = 'field-box';
+    b.innerHTML = `<div class="field-label">${escapeHtml(h)}</div><div class="field-value">${escapeHtml(item[h]||'')}</div>`;
     grid.appendChild(b);
-  }
+  });
 
-  wrapper.appendChild(grid);
-  return wrapper;
+  card.appendChild(grid);
+  return card;
 }
 
-/* ================ render results ================== */
+// render results
 function renderResults(list){
   resultsEl.innerHTML = '';
   if(!list || list.length === 0){
@@ -647,85 +633,72 @@ function renderResults(list){
     downloadBtn.disabled = true;
     return;
   }
-  summaryEl.textContent = list.length + ' registro(s) encontrado(s).';
+  summaryEl.textContent = `${list.length} registro(s) encontrado(s).`;
   downloadBtn.disabled = false;
-  for(var i=0;i<list.length;i++){
-    resultsEl.appendChild(createCard(list[i]));
-  }
+  list.forEach(it => resultsEl.appendChild(createCard(it)));
 }
 
-/* ================ search logic (now reparses csvData each time) ================ */
-function doSearch(){
-  // reparse csvData every search so user can change csvData in code and test
+// run search — reparse embeddedCSV each time (so editing code + reload reflects)
+function runSearch(){
   try {
-    var parsed = parseCSV(csvData);
+    const parsed = parseCSV(embeddedCSV);
     headers = parsed.headers || [];
     database = parsed.rows || [];
-  } catch(err) {
-    headers = []; database = [];
-    console.error('Erro ao parsear csvData:', err);
+  } catch(err){
+    console.error('Erro ao parsear CSV:', err);
+    summaryEl.textContent = 'Erro ao processar dados embutidos (veja console).';
+    return;
   }
 
-  var q = (searchInput.value || '').trim().toLowerCase();
+  const q = (searchInput.value || '').trim().toLowerCase();
   if(q === ''){
     lastFiltered = database.slice();
   } else {
-    lastFiltered = database.filter(function(row){
-      for(var k in row){
-        if(row.hasOwnProperty(k)){
-          var v = (row[k] || '').toString().toLowerCase();
-          if(v.indexOf(q) !== -1) return true;
-        }
-      }
-      return false;
+    lastFiltered = database.filter(row => {
+      return Object.values(row).some(v => (v||'').toString().toLowerCase().includes(q));
     });
   }
   renderResults(lastFiltered);
 }
 
-/* ================ XLS export ================== */
-function exportToXLS(jsonArray, filename){
-  if(!jsonArray || jsonArray.length === 0) return;
-  filename = filename || 'resultados_mbft.xlsx';
-  try {
-    var ws = XLSX.utils.json_to_sheet(jsonArray);
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
-    XLSX.writeFile(wb, filename);
-  } catch(err) {
-    alert('Erro ao exportar XLS: ' + (err && err.message ? err.message : err));
-  }
+// export XLS keeping columns order
+function exportXLS(list){
+  if(!list || list.length === 0){ alert('Nenhum registro para exportar.'); return; }
+  const ws = XLSX.utils.json_to_sheet(list, {header: headers});
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
+  XLSX.writeFile(wb, 'resultados_mbft.xlsx');
 }
 
-/* ================ events ================== */
-searchBtn.addEventListener('click', doSearch);
-searchInput.addEventListener('keydown', function(e){
-  if(e.key === 'Enter' || e.keyCode === 13){
-    e.preventDefault();
-    doSearch();
-  }
-});
+/* =========== events =========== */
+searchBtn.addEventListener('click', runSearch);
 clearBtn.addEventListener('click', function(){
   searchInput.value = '';
   resultsEl.innerHTML = '';
-  summaryEl.textContent = 'Clique em Pesquisar (deixe vazio para listar todos).';
+  summaryEl.textContent = 'Nenhum resultado exibido — clique em Pesquisar.';
   downloadBtn.disabled = true;
   lastFiltered = [];
 });
-downloadBtn.addEventListener('click', function(){ exportToXLS(lastFiltered, 'resultados_mbft.xlsx'); });
+downloadBtn.addEventListener('click', function(){ exportXLS(lastFiltered); });
+searchInput.addEventListener('keydown', function(e){
+  if(e.key === 'Enter' || e.keyCode === 13){
+    e.preventDefault();
+    runSearch();
+  }
+});
 
-/* ================ init ================== */
+/* =========== initial state =========== */
+// parse once to check headers (but do not render)
 (function init(){
-  // parse once for sanity, but doSearch reparses before filtering
-  var p = parseCSV(csvData);
-  headers = p.headers || [];
-  database = p.rows || [];
-  if(!headers || headers.length === 0){
-    summaryEl.textContent = 'A variável csvData parece vazia ou com formato incorreto. Cole seu CSV no código (separador ;).';
+  try {
+    const parsed = parseCSV(embeddedCSV);
+    headers = parsed.headers || [];
+    database = parsed.rows || [];
+    summaryEl.textContent = 'Dados embutidos prontos. Digite um termo e pressione Enter ou clique em Pesquisar (deixe vazio para listar todos).';
     downloadBtn.disabled = true;
-  } else {
-    summaryEl.textContent = 'Pronto — cole seu CSV na variável csvData no código. Clique em Pesquisar para listar resultados (deixe vazio para todos).';
-    downloadBtn.disabled = true;
+  } catch(err){
+    console.error(err);
+    summaryEl.textContent = 'Erro ao inicializar (veja console).';
   }
 })();
 </script>
